@@ -1,0 +1,184 @@
+{
+  "imagepath": [
+    {
+      "frames": [
+        {
+          "filename": "cam_0 2.png",
+          "framesize": [
+            480,
+            640,
+            3
+          ],
+          "rois": [
+            {
+              "coordinates": [
+                [
+                  0.578125,
+                  0.5
+                ],
+                [
+                  0.6734375,
+                  0.5
+                ],
+                [
+                  0.6734375,
+                  0.6895833333333333
+                ],
+                [
+                  0.578125,
+                  0.6895833333333333
+                ]
+              ],
+              "labelstring": "car_rear",
+              "type": "Car_Label"
+            }
+          ]
+        }
+      ],
+      "path": "test"
+    },
+    {
+      "frames": [
+        {
+          "filename": "2222.png",
+          "framesize": [
+            480,
+            640,
+            3
+          ],
+          "rois": [
+            {
+              "coordinates": [
+                [
+                  0.3671875,
+                  0.43333333333333335
+                ],
+                [
+                  0.584375,
+                  0.43333333333333335
+                ],
+                [
+                  0.584375,
+                  0.6479166666666667
+                ],
+                [
+                  0.3671875,
+                  0.6479166666666667
+                ]
+              ],
+              "labelstring": "car_rear",
+              "type": "Car_Label"
+            }
+          ]
+        },
+        {
+          "filename": "cam_0 2 Kopie.png",
+          "framesize": [
+            480,
+            640,
+            3
+          ],
+          "rois": [
+            {
+              "coordinates": [
+                [
+                  0.29375,
+                  0.38333333333333336
+                ],
+                [
+                  0.5546875,
+                  0.36875
+                ],
+                [
+                  0.56875,
+                  0.55
+                ],
+                [
+                  0.3125,
+                  0.5645833333333333
+                ]
+              ],
+              "label": "MS-MM-222",
+              "type": "Numberplate_Label"
+            }
+          ]
+        }
+      ],
+      "path": "test/secstage"
+    },
+    {
+      "frames": [
+        {
+          "filename": "cam_0 3.png",
+          "framesize": [
+            480,
+            640,
+            3
+          ],
+          "rois": [
+            {
+              "coordinates": [
+                [
+                  0.3078125,
+                  0.44166666666666665
+                ],
+                [
+                  0.546875,
+                  0.44166666666666665
+                ],
+                [
+                  0.56875,
+                  0.5895833333333333
+                ],
+                [
+                  0.278125,
+                  0.5895833333333333
+                ]
+              ],
+              "labelstring": "empty",
+              "type": "Car_Label"
+            }
+          ]
+        }
+      ],
+      "path": "test/secstage/thirdsatge"
+    },
+    {
+      "frames": [
+        {
+          "filename": "cam_0.png",
+          "framesize": [
+            480,
+            640,
+            3
+          ],
+          "rois": [
+            {
+              "coordinates": [
+                [
+                  0.45625,
+                  0.4166666666666667
+                ],
+                [
+                  0.640625,
+                  0.4166666666666667
+                ],
+                [
+                  0.640625,
+                  0.525
+                ],
+                [
+                  0.45625,
+                  0.525
+                ]
+              ],
+              "labelstring": "car_front",
+              "type": "Car_Label"
+            }
+          ]
+        }
+      ],
+      "path": "test/secstage/thirdsatge/fourthf"
+    }
+  ]
+}
