@@ -371,13 +371,13 @@ class HackathonApi:
             if result is None:
                 return None
             correctRegions = correctRegions + (1 if result else 0)
-            correctNonNone = correctNonNone + (1 if result and output is not None and (not isinstance(output, str) or output.upper() is not "XX-XX-1") else 0)
+            correctNonNone = correctNonNone + (1 if result and output is not None and (not isinstance(output, str) or output.upper() != "XX-XX-1") else 0)
         ###
         resultMetrics["Frame ID"] = frameId
         resultMetrics["Total regions"] = totalRegions
         resultMetrics["Total readable regions"] = totalReadable
-        resultMetrics["Correctly classified"] = "{:d} ({:.2f}%)".format(correctRegions, float(correctRegions) / totalRegions)
-        resultMetrics["Correctly classified readable"] = "{:d} ({:.2f}%)".format(correctNonNone, float(correctNonNone) / totalReadable)
+        resultMetrics["Correctly classified"] = "{:d} ({:.2f}%)".format(correctRegions, (float(correctRegions) / totalRegions) * 100)
+        resultMetrics["Correctly classified readable"] = "{:d} ({:.2f}%)".format(correctNonNone, (float(correctNonNone) / totalReadable) * 100)
         return resultMetrics
 
     def __runTaskBFull(self, kwargs):
@@ -405,13 +405,13 @@ class HackathonApi:
                 if result is None:
                     return None
                 correctRegions = correctRegions + (1 if result else 0)
-                correctNonNone = correctNonNone + (1 if result and output is not None and (not isinstance(output, str) or output.upper() is not "XX-XX-1") else 0)
+                correctNonNone = correctNonNone + (1 if result and output is not None and (not isinstance(output, str) or output.upper() != "XX-XX-1") else 0)
         ###
         resultMetrics["Total frames"] = self.__datasetWrapper.getTotalFrameCount()
         resultMetrics["Total regions"] = totalRegions
         resultMetrics["Total readable regions"] = totalReadable
-        resultMetrics["Correctly classified"] = "{:d} ({:.2f}%)".format(correctRegions, float(correctRegions) / totalRegions)
-        resultMetrics["Correctly classified readable"] = "{:d} ({:.2f}%)".format(correctNonNone, float(correctNonNone) / totalReadable)
+        resultMetrics["Correctly classified"] = "{:d} ({:.2f}%)".format(correctRegions, (float(correctRegions) / totalRegions) * 100)
+        resultMetrics["Correctly classified readable"] = "{:d} ({:.2f}%)".format(correctNonNone, (float(correctNonNone) / totalReadable) * 100)
         return resultMetrics
 
     def __runIntegratedSingle(self, kwargs):

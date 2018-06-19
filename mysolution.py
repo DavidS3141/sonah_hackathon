@@ -45,6 +45,6 @@ if __name__ == "__main__":
         datasetWrapper = solution.initializeApi(os.path.abspath("./metadata.json"), os.path.abspath("./data/"))
         print("MySolution begins here...")
         print("The total number of frames is {:d}".format(datasetWrapper.getTotalFrameCount()))
-        solution.run(RunModes.TASK_B_SINGLE, frameId=0)
+        solution.run(RunModes.TASK_B_FULL, frameId=0)
     finally:
         del solution
