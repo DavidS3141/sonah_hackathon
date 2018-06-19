@@ -25,20 +25,26 @@ class MySolution(HackathonApi):
             ]])]
         y = [np.array([[0, 0], [0.2, 0], [0.2, 0.2], [0, 0.2]])]
         z = [np.array([[0, 0], [1, 0], [1, 1], [0, 1]])]
-        return z
+        w = [
+            np.array([[0, 0], [0.5, 0], [0.5, 0.5], [0, 0.5]]),
+            np.array([[0.5, 0], [1, 0], [1, 0.5], [0.5, 0.5]]),
+            np.array([[0, 0.5], [0.5, 0.5], [0.5, 1], [0, 1]]),
+            np.array([[0.5, 0.5], [1, 0.5], [1, 1], [0.5, 1]])
+        ]
+        return w
 
-    def handleFrameForTaskB(self):
+    def handleFrameForTaskB(self, frame, regionCoordinates):
         """See the documentation in the parent class for information on this method."""
-        return None
+        return "XX-XX-1"
 
 
 if __name__ == "__main__":
     solution = None
     try:
         solution = MySolution()
-        solution.initializeApi(os.path.abspath("./result.json"), os.path.abspath("./data/"))
+        datasetWrapper = solution.initializeApi(os.path.abspath("./metadata.json"), os.path.abspath("./data/"))
         print("MySolution begins here...")
-        print("The total number of frames is {:d}".format(solution.getTotalFrameCount()))
-        solution.run(RunModes.TASK_A_SINGLE, frameId=0)
+        print("The total number of frames is {:d}".format(datasetWrapper.getTotalFrameCount()))
+        solution.run(RunModes.TASK_B_SINGLE, frameId=0)
     finally:
         del solution

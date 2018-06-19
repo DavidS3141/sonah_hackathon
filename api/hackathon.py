@@ -10,14 +10,25 @@ import abc
 import json
 import cv2 as cv
 import numpy as np
+import time
+import re
 import sys
 import os
 import copy
 import random
+from munkres import Munkres
 
 
-class _DataReader:
-    """Wraps input from the dataset."""
+class DatasetWrapper:
+    """
+    Wraps input from the dataset.
+
+    You can use this class to obtain frames and region metadata.
+    If you want to debug your code, you may use this class to execute your algorithm
+    on a specific frame and check its result against the target values yourself.
+
+    Evaluation is done with the run-methods from the HackathonApi though.
+    """
 
     def __init__(self, labelFilePath, dataFolderPath):
         """Constructor."""
@@ -59,7 +70,7 @@ class _DataReader:
         return len(self.__metadata[frameId]["rois"])
 
     def getFrame(self, frameId):
-        """Read the frame with the specified ID from disk."""
+        """Read the frame with the specified ID from disk and return it as a numpy matrix."""
         return cv.imread(self.__metadata[frameId]["filepath"])
 
     def getRois(self, frameId):
@@ -106,7 +117,7 @@ class HackathonApi:
 
 
         Result requirements:
-        - The method is expected to return a list of two dimensional arrays with exactly 4
+        - The method is expected to return a list of two dimensional numpy arrays with exactly 4
           elements on their first dimension and 2 elements on their second dimension.
           I.e. the form must be [ [[x1, y1], [x2, y2], [x3, y3], [x4, y4]], [...] ].
           (It describes a list of regions, which are in turn defined by their four
@@ -120,7 +131,7 @@ class HackathonApi:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def handleFrameForTaskB(self):
+    def handleFrameForTaskB(self, frame, regionCoordinates):
         """
         Implement a solution to task B in this method.
 
@@ -135,7 +146,7 @@ class HackathonApi:
         - The method is expected to return a string, that equals the number plate
           in the input region or None.
         - The output string must match the regular expression:
-          ^[a-zA-ZüÖöÜäÄ]{1,3}-[a-zA-ZöÖüÜäÄ]{1,2}-[1-9][0-9]{0,3})$
+          ^[a-zA-ZüÖöÜäÄ]{1,3}-[a-zA-ZöÖüÜäÄ]{1,2}-[1-9][0-9]{0,3}$
         - Special number plates, that are not of this format, have to return None.
         - If the number plate can not be read the output must be None
         """
@@ -144,10 +155,6 @@ class HackathonApi:
     ###
     #   Public methods
     ###
-
-    def getTotalFrameCount(self):
-        """Return the number of total frames specified in the metadata."""
-        return self.__dataReader.getTotalFrameCount()
 
     def initializeApi(self, metadataFilePath, dataFolderPath):
         """Load all metadata and set up everything needed to run."""
@@ -160,26 +167,24 @@ class HackathonApi:
             RunModes.INTEGRATED_SINGLE: self.__runIntegratedSingle,
             RunModes.INTEGRATED_FULL: self.__runIntegratedFull
         }
-        self.__dataReader = _DataReader(metadataFilePath, dataFolderPath)
+        self.__datasetWrapper = DatasetWrapper(metadataFilePath, dataFolderPath)
+        return self.__datasetWrapper
 
     def run(self, runMode, **kwargs):
         """Run the selected mode."""
         if runMode in self.__runModeFunctions:
             print("Running {}".format(runMode.name))
+            timeBegin = time.time()
             resultMetrics = self.__runModeFunctions[runMode](kwargs)
             if resultMetrics is not None:
                 self.__printResultMetrics(resultMetrics)
+            print("Ran {} in {:.3f} seconds.".format(runMode.name, time.time() - timeBegin))
         else:
             print("ERROR: No such mode: {}".format(runMode))
 
     ###
     #   Private methods
     ###
-
-    def __hungarianAlgorithm(self, costMatrix):
-        """Calculate an assignment of minimal costs for each row per the hungarian method."""
-        print(costMatrix)
-        return [0]
 
     def __checkOutputOfTaskA(self, image, regions, output):
         """Check the output of the child algorithm against the correct coordinates."""
@@ -229,19 +234,38 @@ class HackathonApi:
                 # Invert, since hung.alg. finds minimal cost
                 matchingMatrix[i][j] = 1.0 - (float(intersectionArea) / float(outputAreas[i] + regionAreas[j] - intersectionArea))
         # Find best match with the hungarian algorithm
-        bestMatches = self.__hungarianAlgorithm(matchingMatrix)
+        m = Munkres()
+        bestMatches = m.compute(matchingMatrix)
         result = []
         missedRois = 0
         unmatchedRois = 0
-        for outputIndex in range(len(bestMatches)):
+        for matchIndex in range(len(bestMatches)):
+            outputIndex = bestMatches[matchIndex][0]
+            regionIndex = bestMatches[matchIndex][1]
             if outputIndex < len(outputMasks):
-                if bestMatches[outputIndex] < len(regionMasks):
-                    result.append([bestMatches[outputIndex], 1.0 - matchingMatrix[outputIndex][bestMatches[outputIndex]]])
+                if regionIndex < len(regionMasks):
+                    result.append([outputIndex, regionIndex, 1.0 - matchingMatrix[outputIndex][regionIndex]])
                 else:
                     unmatchedRois = unmatchedRois + 1
             else:
                 missedRois = missedRois + 1
-        return np.array(result), missedRois, unmatchedRois
+        result = np.array(result)
+        return result[result[:, 0].argsort()], missedRois, unmatchedRois
+
+    def __checkOutputOfTaskB(self, correctLabel, output):
+        """Check the output of the child algorithm against the correct coordinates."""
+        # Check the requirements first
+        if output is None:
+            output = "XX-XX-1"
+        if not isinstance(output, str):
+            print("ERROR: Output is not a string.")
+            return None
+        if not re.match("^[a-zA-ZüÖöÜäÄ]{1,3}-[a-zA-ZöÖüÜäÄ]{1,2}-[1-9][0-9]{0,3}$", output):
+            print("ERROR: Output does not match regular expression of a number plate.")
+            return None
+        if output.upper() != correctLabel.upper():
+            return False
+        return True
 
     def __printResultMetrics(self, resultMetrics):
         """Print the results of a run."""
@@ -260,88 +284,155 @@ class HackathonApi:
 
         If no frameId was specified, a random one is selected.
         """
-        if "frameId" not in kwargs or (not isinstance(kwargs["frameId"], int)) or kwargs["frameId"] < 0 or kwargs["frameId"] >= self.getTotalFrameCount():
+        if "frameId" not in kwargs or (not isinstance(kwargs["frameId"], int)) or kwargs["frameId"] < 0 or kwargs["frameId"] >= self.__datasetWrapper.getTotalFrameCount():
             print("INFO: No or invalid frameId, selecting random frame!")
-            frameId = random.randint(0, self.getTotalFrameCount()-1)
+            frameId = random.randint(0, self.__datasetWrapper.getTotalFrameCount()-1)
         else:
             frameId = kwargs["frameId"]
-        resultMetrics = {
-            "Total frames": 1,
-            "Frame ID": frameId
-        }
+        resultMetrics = {}
         ###
-        image = self.__dataReader.getFrame(frameId)
+        image = self.__datasetWrapper.getFrame(frameId)
         if image is None:
             print("ERROR: File for frame {:d} not found.".format(frameId))
             return None
         output = self.handleFrameForTaskA(image)
-        regions = self.__dataReader.getRois(frameId)
+        regions = self.__datasetWrapper.getRois(frameId)
         result, missedRois, unmatchedRois = self.__checkOutputOfTaskA(image, regions, output)
         if result is None:
             return None
         ###
-        resultMetrics["Average overlap of result and target area"] = np.mean(result[:, 1])
+        resultMetrics["Frame ID"] = frameId
+        resultMetrics["Average overlap of matched ROIs"] = np.mean(result[:, 2])
         resultMetrics["Missing ROIs"] = missedRois
         resultMetrics["Unmatched output ROIs"] = unmatchedRois
+        resultMetrics["Final evaluation score"] = (np.mean(result[:, 2]) * len(result)) / (len(result) + missedRois + unmatchedRois)
         return resultMetrics
 
     def __runTaskAFull(self, kwargs):
-        """DOCSTRING"""
+        """Execute the algorithm on all frames in succession and measure outputs."""
         resultMetrics = {}
-        totalFrames = 0
-        averageAreaOverlap = 0
+        allAverageAreaOverlaps = []
+        allMissedRois = []
+        allUnmatchedRois = []
+        allEvaluationScores = []
         ###
+        for i in range(self.__datasetWrapper.getTotalFrameCount()):
+            image = self.__datasetWrapper.getFrame(i)
+            if image is None:
+                print("ERROR: File for frame {:d} not found.".format(i))
+                return None
+            output = self.handleFrameForTaskA(image)
+            regions = self.__datasetWrapper.getRois(i)
+            result, missedRois, unmatchedRois = self.__checkOutputOfTaskA(image, regions, output)
+            if result is None:
+                return None
+            allAverageAreaOverlaps.append(np.mean(result[:, 2]))
+            allMissedRois.append(missedRois)
+            allUnmatchedRois.append(unmatchedRois)
+            allEvaluationScores.append((np.mean(result[:, 2]) * len(result)) / (len(result) + missedRois + unmatchedRois))
         ###
-        resultMetrics["Total frames"] = totalFrames
-        resultMetrics["Average overlap of result and target area"] = averageAreaOverlap
+        resultMetrics["Total frames"] = self.__datasetWrapper.getTotalFrameCount()
+        resultMetrics["Average overlap of matched ROIs"] = np.mean(allAverageAreaOverlaps)
+        resultMetrics["Missing ROIs"] = np.sum(allMissedRois)
+        resultMetrics["Unmatched output ROIs"] = np.sum(allUnmatchedRois)
+        # resultMetrics["Final evaluation score per frame"] = np.divide(np.multiply(np.array(allEvaluationScores), 1000).astype(int).astype(float), 1000).tolist()
+        resultMetrics["Final evaluation score"] = np.mean(allEvaluationScores)
         return resultMetrics
 
     def __runTaskBSingle(self, kwargs):
-        """DOCSTRING"""
-        if "frameId" not in kwargs or (not isinstance(kwargs["frameId"], int)) or kwargs["frameId"] < 0 or kwargs["frameId"] >= self.getTotalFrameCount():
+        """
+        Take the frame with the ID specified in the kwargs and execute the algorithm only on all ROIs in this frame.
+
+        If no frameId was specified, a random one is selected.
+        """
+        if "frameId" not in kwargs or (not isinstance(kwargs["frameId"], int)) or kwargs["frameId"] < 0 or kwargs["frameId"] >= self.__datasetWrapper.getTotalFrameCount():
             print("INFO: No or invalid frameId, selecting random frame!")
-            frameId = random.randint(0, self.getTotalFrameCount()-1)
+            frameId = random.randint(0, self.__datasetWrapper.getTotalFrameCount()-1)
         else:
             frameId = kwargs["frameId"]
-        resultMetrics = {
-            "Total frames": 1,
-            "Frame ID": frameId
-        }
+        resultMetrics = {}
+        totalRegions = self.__datasetWrapper.getTotalRoisForFrame(frameId)
+        totalReadable = 0
+        correctRegions = 0
+        correctNonNone = 0
         ###
-
+        image = self.__datasetWrapper.getFrame(frameId)
+        if image is None:
+            print("ERROR: File for frame {:d} not found.".format(frameId))
+            return None
+        regions = self.__datasetWrapper.getRois(frameId)
+        for i in range(len(regions)):
+            coordinates = regions[i]["coordinates"]
+            label = regions[i]["label"]
+            if label.upper() != "XX-XX-1":
+                totalReadable = totalReadable + 1
+            output = self.handleFrameForTaskB(image, coordinates)
+            result = self.__checkOutputOfTaskB(label, output)
+            if result is None:
+                return None
+            correctRegions = correctRegions + (1 if result else 0)
+            correctNonNone = correctNonNone + (1 if result and output is not None and (not isinstance(output, str) or output.upper() is not "XX-XX-1") else 0)
         ###
+        resultMetrics["Frame ID"] = frameId
+        resultMetrics["Total regions"] = totalRegions
+        resultMetrics["Total readable regions"] = totalReadable
+        resultMetrics["Correctly classified"] = "{:d} ({:.2f}%)".format(correctRegions, float(correctRegions) / totalRegions)
+        resultMetrics["Correctly classified readable"] = "{:d} ({:.2f}%)".format(correctNonNone, float(correctNonNone) / totalReadable)
         return resultMetrics
 
     def __runTaskBFull(self, kwargs):
-        """DOCSTRING"""
+        """Execute the algorithm on all frames in succession and measure outputs."""
         resultMetrics = {}
-        totalFrames = 0
+        totalRegions = 0
+        totalReadable = 0
+        correctRegions = 0
+        correctNonNone = 0
         ###
+        for i in range(self.__datasetWrapper.getTotalFrameCount()):
+            image = self.__datasetWrapper.getFrame(i)
+            if image is None:
+                print("ERROR: File for frame {:d} not found.".format(i))
+                return None
+            regions = self.__datasetWrapper.getRois(i)
+            totalRegions = totalRegions + len(regions)
+            for i in range(len(regions)):
+                coordinates = regions[i]["coordinates"]
+                label = regions[i]["label"]
+                if label.upper() != "XX-XX-1":
+                    totalReadable = totalReadable + 1
+                output = self.handleFrameForTaskB(image, coordinates)
+                result = self.__checkOutputOfTaskB(label, output)
+                if result is None:
+                    return None
+                correctRegions = correctRegions + (1 if result else 0)
+                correctNonNone = correctNonNone + (1 if result and output is not None and (not isinstance(output, str) or output.upper() is not "XX-XX-1") else 0)
         ###
-        resultMetrics["Total frames"] = totalFrames
+        resultMetrics["Total frames"] = self.__datasetWrapper.getTotalFrameCount()
+        resultMetrics["Total regions"] = totalRegions
+        resultMetrics["Total readable regions"] = totalReadable
+        resultMetrics["Correctly classified"] = "{:d} ({:.2f}%)".format(correctRegions, float(correctRegions) / totalRegions)
+        resultMetrics["Correctly classified readable"] = "{:d} ({:.2f}%)".format(correctNonNone, float(correctNonNone) / totalReadable)
         return resultMetrics
 
     def __runIntegratedSingle(self, kwargs):
         """DOCSTRING"""
-        if "frameId" not in kwargs or (not isinstance(kwargs["frameId"], int)) or kwargs["frameId"] < 0 or kwargs["frameId"] >= self.getTotalFrameCount():
+        if "frameId" not in kwargs or (not isinstance(kwargs["frameId"], int)) or kwargs["frameId"] < 0 or kwargs["frameId"] >= self.__datasetWrapper.getTotalFrameCount():
             print("INFO: No or invalid frameId, selecting random frame!")
-            frameId = random.randint(0, self.getTotalFrameCount()-1)
+            frameId = random.randint(0, self.__datasetWrapper.getTotalFrameCount()-1)
         else:
             frameId = kwargs["frameId"]
-        resultMetrics = {
-            "Total frames": 1,
-            "Frame ID": frameId
-        }
+        resultMetrics = {}
         ###
 
         ###
+        resultMetrics["Frame ID"] = frameId
         return resultMetrics
 
     def __runIntegratedFull(self, kwargs):
         """DOCSTRING"""
-        resultMetrics = {
-            "Total frames": self.getTotalFrameCount()
-        }
+        resultMetrics = {}
         ###
+
         ###
+        resultMetrics["Total frames"] = self.__datasetWrapper.getTotalFrameCount()
         return resultMetrics
