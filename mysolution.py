@@ -9,22 +9,6 @@ class MySolution(HackathonApi):
 
     def handleFrameForTaskA(self, frame):
         """See the documentation in the parent class for information on this method."""
-        x = [
-            np.array([[
-                0.26593406593406593,
-                0.7065217391304348
-            ], [
-                0.4642857142857143,
-                0.6956521739130435
-            ], [
-                0.46373626373626375,
-                0.7815217391304348
-            ], [
-                0.2681318681318681,
-                0.7945652173913044
-            ]])]
-        y = [np.array([[0, 0], [0.2, 0], [0.2, 0.2], [0, 0.2]])]
-        z = [np.array([[0, 0], [1, 0], [1, 1], [0, 1]])]
         w = [
             np.array([[0, 0], [0.5, 0], [0.5, 0.5], [0, 0.5]]),
             np.array([[0.5, 0], [1, 0], [1, 0.5], [0.5, 0.5]]),
@@ -35,7 +19,7 @@ class MySolution(HackathonApi):
 
     def handleFrameForTaskB(self, frame, regionCoordinates):
         """See the documentation in the parent class for information on this method."""
-        return "XX-XX-1"
+        return None
 
 
 if __name__ == "__main__":
@@ -45,6 +29,7 @@ if __name__ == "__main__":
         datasetWrapper = solution.initializeApi(os.path.abspath("./metadata.json"), os.path.abspath("./data/"))
         print("MySolution begins here...")
         print("The total number of frames is {:d}".format(datasetWrapper.getTotalFrameCount()))
-        solution.run(RunModes.TASK_B_FULL, frameId=0)
+        solution.run(RunModes.TASK_B_FULL)
+        solution.run(RunModes.INTEGRATED_FULL)
     finally:
         del solution

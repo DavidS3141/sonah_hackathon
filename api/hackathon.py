@@ -305,7 +305,7 @@ class HackathonApi:
         resultMetrics["Average overlap of matched ROIs"] = np.mean(result[:, 2])
         resultMetrics["Missing ROIs"] = missedRois
         resultMetrics["Unmatched output ROIs"] = unmatchedRois
-        resultMetrics["Final evaluation score"] = (np.mean(result[:, 2]) * len(result)) / (len(result) + missedRois + unmatchedRois)
+        resultMetrics["Final evaluation score"] = "{:.3f}%".format(((np.mean(result[:, 2]) * len(result)) / (len(result) + missedRois + unmatchedRois)) * 100)
         return resultMetrics
 
     def __runTaskAFull(self, kwargs):
@@ -336,7 +336,7 @@ class HackathonApi:
         resultMetrics["Missing ROIs"] = np.sum(allMissedRois)
         resultMetrics["Unmatched output ROIs"] = np.sum(allUnmatchedRois)
         # resultMetrics["Final evaluation score per frame"] = np.divide(np.multiply(np.array(allEvaluationScores), 1000).astype(int).astype(float), 1000).tolist()
-        resultMetrics["Final evaluation score"] = np.mean(allEvaluationScores)
+        resultMetrics["Final evaluation score"] = "{:.3f}%".format(np.mean(allEvaluationScores) * 100)
         return resultMetrics
 
     def __runTaskBSingle(self, kwargs):
@@ -422,17 +422,74 @@ class HackathonApi:
         else:
             frameId = kwargs["frameId"]
         resultMetrics = {}
+        totalRegionsMatched = 0
+        correctRegions = 0
         ###
-
+        image = self.__datasetWrapper.getFrame(frameId)
+        if image is None:
+            print("ERROR: File for frame {:d} not found.".format(frameId))
+            return None
+        outputTaskA = self.handleFrameForTaskA(image)
+        regions = self.__datasetWrapper.getRois(frameId)
+        matches, missedRois, unmatchedRois = self.__checkOutputOfTaskA(image, regions, outputTaskA)
+        if matches is None:
+            return None
+        totalRegionsMatched = totalRegionsMatched + len(matches)
+        for i in range(len(matches)):
+            coordinates = outputTaskA[int(matches[i][0])]
+            label = regions[int(matches[i][1])]["label"]
+            outputTaskB = self.handleFrameForTaskB(image, coordinates)
+            result = self.__checkOutputOfTaskB(label, outputTaskB)
+            if result is None:
+                return None
+            correctRegions = correctRegions + (1 if result else 0)
         ###
+        taskAScore = (np.mean(matches[:, 2]) * len(matches)) / (len(matches) + missedRois + unmatchedRois)
+        taskBScore = float(correctRegions) / totalRegionsMatched
         resultMetrics["Frame ID"] = frameId
+        resultMetrics["Total num of matched regions"] = "{:d} (+{:d}/-{:d})".format(totalRegionsMatched, unmatchedRois, missedRois)
+        resultMetrics["Task A - Final evaluation score"] = "{:.3f}%".format(taskAScore * 100)
+        resultMetrics["Task B - Correctly classified regions of Task A"] = "{:.3f}%".format(taskBScore * 100)
+        resultMetrics["Combined score"] = "{:.3f}%".format((taskAScore * taskBScore) * 100)
         return resultMetrics
 
     def __runIntegratedFull(self, kwargs):
         """DOCSTRING"""
         resultMetrics = {}
+        allEvaluationScores = []
+        allMissedRois = []
+        allUnmatchedRois = []
+        totalRegionsMatched = 0
+        correctRegions = 0
         ###
-
+        for i in range(self.__datasetWrapper.getTotalFrameCount()):
+            image = self.__datasetWrapper.getFrame(i)
+            if image is None:
+                print("ERROR: File for frame {:d} not found.".format(i))
+                return None
+            outputTaskA = self.handleFrameForTaskA(image)
+            regions = self.__datasetWrapper.getRois(i)
+            matches, missedRois, unmatchedRois = self.__checkOutputOfTaskA(image, regions, outputTaskA)
+            if matches is None:
+                return None
+            allMissedRois.append(missedRois)
+            allUnmatchedRois.append(unmatchedRois)
+            allEvaluationScores.append((np.mean(matches[:, 2]) * len(matches)) / (len(matches) + missedRois + unmatchedRois))
+            totalRegionsMatched = totalRegionsMatched + len(matches)
+            for i in range(len(matches)):
+                coordinates = outputTaskA[int(matches[i][0])]
+                label = regions[int(matches[i][1])]["label"]
+                outputTaskB = self.handleFrameForTaskB(image, coordinates)
+                result = self.__checkOutputOfTaskB(label, outputTaskB)
+                if result is None:
+                    return None
+                correctRegions = correctRegions + (1 if result else 0)
         ###
+        taskAScore = np.mean(allEvaluationScores)
+        taskBScore = float(correctRegions) / totalRegionsMatched
         resultMetrics["Total frames"] = self.__datasetWrapper.getTotalFrameCount()
+        resultMetrics["Total num of matched regions"] = "{:d} (+{:d}/-{:d})".format(totalRegionsMatched, np.sum(allUnmatchedRois), np.sum(allMissedRois))
+        resultMetrics["Task A - Final evaluation score"] = "{:.3f}%".format(taskAScore * 100)
+        resultMetrics["Task B - Correctly classified regions of Task A"] = "{:.3f}%".format(taskBScore * 100)
+        resultMetrics["Combined score"] = "{:.3f}%".format((taskAScore * taskBScore) * 100)
         return resultMetrics
