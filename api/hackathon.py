@@ -512,9 +512,18 @@ class HackathonApi:
             print("ERROR: No or invalid file path to video!")
             return None
         videoCapture = cv.VideoCapture(kwargs["videoFilePath"])
+        windowCreated = False
         while videoCapture.isOpened():
             # Read video frame
             ret, image = videoCapture.read()
+            imageShape = image.shape
+            if not windowCreated:
+                windowCreated = True
+                cv.namedWindow("Demo video", cv.WINDOW_NORMAL)
+                aspectRatio = float(imageShape[1]) / float(imageShape[0])
+                targetWidth = 600
+                targetHeight = int(targetWidth * aspectRatio)
+                cv.resizeWindow("Demo video", targetHeight, targetWidth)
             # Run algorithm
             output = []
             outputTaskA = self.handleFrameForTaskA(image)
@@ -527,8 +536,10 @@ class HackathonApi:
                 })
             # Visualize output
             for i in range(len(output)):
-                cv.drawContours(image, [output[i]["coordinates"]], -1, (255, 255, 255), thickness=3)
-                cv.putText(image, output[i]["label"], (output[i]["coordinates"][0][0] + 10, output[i]["coordinates"][0][1] - 20), cv.FONT_HERSHEY_SIMPLEX, 20, (255, 0, 0), 2, cv.LINE_8, True)
+                scaledCoordinates = np.multiply(output[i]["coordinates"], np.array([imageShape[1], imageShape[0]])).astype(int)
+                cv.drawContours(image, [scaledCoordinates], -1, (255, 255, 255), 5, cv.LINE_8)
+                textSize = cv.getTextSize(output[i]["label"], cv.FONT_HERSHEY_SIMPLEX, 1, 3)[0]
+                cv.putText(image, output[i]["label"], (scaledCoordinates[0][0] + 10, scaledCoordinates[0][1] + 10 + textSize[1]), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3, cv.LINE_8, False)
             # Show result
             cv.imshow('Demo video', image)
             if cv.waitKey(1) & 0xFF == ord('q'):

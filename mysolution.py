@@ -1,6 +1,10 @@
 """This is an example module showing how the API should be used."""
 from api.hackathon import HackathonApi, RunModes
 import os
+import time
+import hashlib
+import json
+import random
 import numpy as np
 
 
@@ -27,15 +31,25 @@ class MySolution(HackathonApi):
         """
         See the documentation in the parent class for a whole lot of information on this method.
 
-        We will just stupidly return the four quadrants here,
+        We will just stupidly return random ROIs here
         to show what the result has to look like.
         """
-        return [
+        resultSet = [[
             np.array([[0, 0], [0.5, 0], [0.5, 0.5], [0, 0.5]]),
             np.array([[0.5, 0], [1, 0], [1, 0.5], [0.5, 0.5]]),
             np.array([[0, 0.5], [0.5, 0.5], [0.5, 1], [0, 1]]),
             np.array([[0.5, 0.5], [1, 0.5], [1, 1], [0.5, 1]])
-        ]
+        ], [
+            np.array([[0.5, 0.3], [0.8, 0.3], [0.8, 0.35], [0.5, 0.35]])
+        ], [
+            np.array([[0.2, 0.3], [0.5, 0.3], [0.5, 0.35], [0.2, 0.35]])
+        ], [
+            np.array([[0.3, 0.6], [0.5, 0.6], [0.5, 0.65], [0.3, 0.65]]),
+            np.array([[0.1, 0.2], [0.3, 0.25], [0.3, 0.3], [0.1, 0.27]]),
+        ], [
+            np.array([[0.8, 0.5], [0.9, 0.5], [0.9, 0.52], [0.8, 0.52]])
+        ]]
+        return resultSet[int((time.time() / 10.0) % len(resultSet))]
 
     def handleFrameForTaskB(self, frame, regionCoordinates):
         """
@@ -44,7 +58,17 @@ class MySolution(HackathonApi):
         We will just stupidly return None here,
         which basically stands for "I can't read this".
         """
-        return None
+        rng = random.Random()
+        m = hashlib.md5()
+        m.update(json.dumps(regionCoordinates.tolist()).encode())
+        rng.seed(m.hexdigest())
+        resultSet = [
+            None,
+            "AC-FT-774",
+            "MU-YG-728",
+            "HB-KZ-3124"
+        ]
+        return resultSet[int(((time.time() / 10.0) + rng.randrange(0, len(resultSet))) % len(resultSet))]
 
 
 if __name__ == "__main__":
