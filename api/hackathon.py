@@ -34,10 +34,6 @@ class DatasetWrapper:
         """Constructor."""
         self.__metadata = self.__loadMetadata(labelFilePath, dataFolderPath)
 
-    def __del__(self):
-        """Destructor."""
-        pass
-
     def __loadMetadata(self, metadataFilePath, dataFolderPath):
         """Load all metadata."""
         result = []
@@ -93,6 +89,8 @@ class RunModes(Enum):
     INTEGRATED_SINGLE = 4
     # Test Task B on Task A's output on the whole dataset
     INTEGRATED_FULL = 5
+    # Run both tasks in integrated fashion, but use a video as input and visualize the results.
+    VISUALIZATION = 6
 
 
 class HackathonApi:
@@ -165,14 +163,19 @@ class HackathonApi:
             RunModes.TASK_B_SINGLE: self.__runTaskBSingle,
             RunModes.TASK_B_FULL: self.__runTaskBFull,
             RunModes.INTEGRATED_SINGLE: self.__runIntegratedSingle,
-            RunModes.INTEGRATED_FULL: self.__runIntegratedFull
+            RunModes.INTEGRATED_FULL: self.__runIntegratedFull,
+            RunModes.VISUALIZATION: self.__runVisualization
         }
         self.__datasetWrapper = DatasetWrapper(metadataFilePath, dataFolderPath)
         return self.__datasetWrapper
 
     def run(self, runMode, **kwargs):
-        """Run the selected mode."""
-        if runMode in self.__runModeFunctions:
+        """
+        Run the algorithm(s) in the provided mode.
+
+        See the run modes documentation for info on what exactly they run.
+        """
+        if self.__runModeFunctions is not None and runMode in self.__runModeFunctions:
             print("Running {}".format(runMode.name))
             timeBegin = time.time()
             resultMetrics = self.__runModeFunctions[runMode](kwargs)
@@ -415,7 +418,12 @@ class HackathonApi:
         return resultMetrics
 
     def __runIntegratedSingle(self, kwargs):
-        """DOCSTRING"""
+        """
+        Take the frame with the ID specified in the kwargs and execute the algorithm only on this frame.
+
+        Both algorithms are executed in sequence. I.e. the output of task A is fed as an input to task B.
+        If no frameId was specified, a random one is selected.
+        """
         if "frameId" not in kwargs or (not isinstance(kwargs["frameId"], int)) or kwargs["frameId"] < 0 or kwargs["frameId"] >= self.__datasetWrapper.getTotalFrameCount():
             print("INFO: No or invalid frameId, selecting random frame!")
             frameId = random.randint(0, self.__datasetWrapper.getTotalFrameCount()-1)
@@ -454,7 +462,11 @@ class HackathonApi:
         return resultMetrics
 
     def __runIntegratedFull(self, kwargs):
-        """DOCSTRING"""
+        """
+        Execute the algorithm on all frames in succession and measure outputs.
+
+        Both algorithms are executed in sequence. I.e. the output of task A is fed as an input to task B.
+        """
         resultMetrics = {}
         allEvaluationScores = []
         allMissedRois = []
@@ -493,3 +505,34 @@ class HackathonApi:
         resultMetrics["Task B - Correctly classified regions of Task A"] = "{:.3f}%".format(taskBScore * 100)
         resultMetrics["Combined score"] = "{:.3f}%".format((taskAScore * taskBScore) * 100)
         return resultMetrics
+
+    def __runVisualization(self, kwargs):
+        """Run a visualization showing the results of the algorithm live in a video."""
+        if "videoFilePath" not in kwargs or (not isinstance(kwargs["videoFilePath"], str)) or (not os.path.isfile(kwargs["videoFilePath"])):
+            print("ERROR: No or invalid file path to video!")
+            return None
+        videoCapture = cv.VideoCapture(kwargs["videoFilePath"])
+        while videoCapture.isOpened():
+            # Read video frame
+            ret, image = videoCapture.read()
+            # Run algorithm
+            output = []
+            outputTaskA = self.handleFrameForTaskA(image)
+            for i in range(len(outputTaskA)):
+                coordinates = outputTaskA[i]
+                outputTaskB = self.handleFrameForTaskB(image, coordinates)
+                output.append({
+                    "coordinates": coordinates,
+                    "label": outputTaskB if outputTaskB is not None else "XX-XX-1"
+                })
+            # Visualize output
+            for i in range(len(output)):
+                cv.drawContours(image, [output[i]["coordinates"]], -1, (255, 255, 255), thickness=3)
+                cv.putText(image, output[i]["label"], (output[i]["coordinates"][0][0] + 10, output[i]["coordinates"][0][1] - 20), cv.FONT_HERSHEY_SIMPLEX, 20, (255, 0, 0), 2, cv.LINE_8, True)
+            # Show result
+            cv.imshow('Demo video', image)
+            if cv.waitKey(1) & 0xFF == ord('q'):
+                break
+        videoCapture.release()
+        cv.destroyAllWindows()
+        return None
