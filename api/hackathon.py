@@ -144,7 +144,7 @@ class HackathonApi:
         - The method is expected to return a string, that equals the number plate
           in the input region or None.
         - The output string must match the regular expression:
-          ^[a-zA-ZüÖöÜäÄ]{1,3}-[a-zA-ZöÖüÜäÄ]{1,2}-[1-9][0-9]{0,3}$
+          ^[a-zA-ZöÖüÜäÄ]{1,3}-[a-zA-ZöÖüÜäÄ]{1,2}-[1-9][0-9]{0,3}[eE]?$
         - Special number plates, that are not of this format, have to return None.
         - If the number plate can not be read the output must be None
         """
