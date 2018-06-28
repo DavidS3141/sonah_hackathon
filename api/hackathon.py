@@ -50,7 +50,7 @@ class DatasetWrapper:
                     for k in range(len(jsonData[i]["frames"][j]["rois"])):
                         if jsonData[i]["frames"][j]["rois"][k]["type"] == "Numberplate_Label":
                             roiObj = {}
-                            roiObj["coordinates"] = jsonData[i]["frames"][j]["rois"][k]["coordinates"]
+                            roiObj["coordinates"] = np.array(jsonData[i]["frames"][j]["rois"][k]["coordinates"])
                             roiObj["label"] = jsonData[i]["frames"][j]["rois"][k]["label"]
                             resultObj["rois"].append(roiObj)
                     if len(resultObj["rois"]) > 0:
