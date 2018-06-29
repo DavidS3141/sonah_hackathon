@@ -90,7 +90,7 @@ if __name__ == "__main__":
     # getFrame(frameId) method for example. Have a look at the class' documentation
     # inside the ./api/hackathon.py file!
     solution.run(RunModes.TASK_A_FULL)
-    # solution.run(RunModes.TASK_B_FULL)
+    solution.run(RunModes.TASK_B_FULL)
     # solution.run(RunModes.INTEGRATED_FULL)
     # The visualization run mode only shows the algorithm performing live on
     # a video. The only thing it really tests is whether your algorithm can

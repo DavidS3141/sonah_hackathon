@@ -332,6 +332,22 @@ class HackathonApi:
             result, missedRois, unmatchedRois = self.__checkOutputOfTaskA(image, regions, output)
             if result is None:
                 return None
+            # Visualize output
+            fname = self.__datasetWrapper.getFileName(i)
+            filename, ext = os.path.splitext(fname)
+            fname = filename + '_output' + ext
+
+            imageShape = image.shape
+            for i in range(len(output)):
+                scaledCoordinates = np.multiply(output[i], np.array([imageShape[1], imageShape[0]])).astype(int)
+                cv.drawContours(image, [scaledCoordinates], -1, (0, 0, 255), 5, cv.LINE_8)
+            for i in range(len(regions)):
+                scaledCoordinates = np.multiply(regions[i]["coordinates"], np.array([imageShape[1], imageShape[0]])).astype(int)
+                cv.drawContours(image, [scaledCoordinates], -1, (0, 255, 0), 5, cv.LINE_8)
+                textSize = cv.getTextSize(regions[i]["label"], cv.FONT_HERSHEY_SIMPLEX, 1, 3)[0]
+                cv.putText(image, regions[i]["label"], (scaledCoordinates[0][0] + 10, scaledCoordinates[0][1] + 10 + textSize[1]), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 3, cv.LINE_8, False)
+            cv.imwrite(fname, image)
+            # log
             allAverageAreaOverlaps.append(np.mean(result[:, 2]))
             allMissedRois.append(missedRois)
             allUnmatchedRois.append(unmatchedRois)
@@ -401,17 +417,34 @@ class HackathonApi:
                 return None
             regions = self.__datasetWrapper.getRois(i)
             totalRegions = totalRegions + len(regions)
+            outputs = []
+            fname = self.__datasetWrapper.getFileName(i)
             for i in range(len(regions)):
                 coordinates = regions[i]["coordinates"]
                 label = regions[i]["label"]
                 if label.upper() != "XX-XX-1":
                     totalReadable = totalReadable + 1
                 output = self.handleFrameForTaskB(image, coordinates)
+                outputs.append(output)
                 result = self.__checkOutputOfTaskB(label, output)
                 if result is None:
                     return None
                 correctRegions = correctRegions + (1 if result else 0)
                 correctNonNone = correctNonNone + (1 if result and output is not None and (not isinstance(output, str) or output.upper() != "XX-XX-1") else 0)
+            # Visualize output
+            filename, ext = os.path.splitext(fname)
+            fname = filename + '_outputB' + ext
+            outputs = ['XX-XX-1' if o is None else o for o in outputs]
+
+            imageShape = image.shape
+            for i in range(len(regions)):
+                scaledCoordinates = np.multiply(regions[i]["coordinates"], np.array([imageShape[1], imageShape[0]])).astype(int)
+                cv.drawContours(image, [scaledCoordinates], -1, (0, 255, 0), 5, cv.LINE_8)
+                textSize = cv.getTextSize(regions[i]["label"], cv.FONT_HERSHEY_SIMPLEX, 1, 3)[0]
+                cv.putText(image, regions[i]["label"], (scaledCoordinates[0][0] + 10, scaledCoordinates[0][1] + 10 + textSize[1]), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 3, cv.LINE_8, False)
+                textSize = cv.getTextSize(outputs[i], cv.FONT_HERSHEY_SIMPLEX, 1, 3)[0]
+                cv.putText(image, outputs[i], (scaledCoordinates[0][0] + 10, scaledCoordinates[0][1] - 10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3, cv.LINE_8, False)
+            cv.imwrite(fname, image)
         ###
         resultMetrics["Total frames"] = self.__datasetWrapper.getTotalFrameCount()
         resultMetrics["Total regions"] = totalRegions
