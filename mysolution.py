@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """This is an example module showing how the API should be used."""
 from api.hackathon import HackathonApi, RunModes
 import os
@@ -87,9 +89,10 @@ if __name__ == "__main__":
     # of the datasetWrapper directly. You can get frames with its
     # getFrame(frameId) method for example. Have a look at the class' documentation
     # inside the ./api/hackathon.py file!
-    solution.run(RunModes.TASK_B_FULL)
-    solution.run(RunModes.INTEGRATED_FULL)
+    solution.run(RunModes.TASK_A_FULL)
+    # solution.run(RunModes.TASK_B_FULL)
+    # solution.run(RunModes.INTEGRATED_FULL)
     # The visualization run mode only shows the algorithm performing live on
     # a video. The only thing it really tests is whether your algorithm can
     # run in real-time. Its primary purpose is to provide a visualization however.
-    solution.run(RunModes.VISUALIZATION, videoFilePath=os.path.abspath("./data/demovideo.avi"))
+    # solution.run(RunModes.VISUALIZATION, videoFilePath=os.path.abspath("./data/demovideo.avi"))

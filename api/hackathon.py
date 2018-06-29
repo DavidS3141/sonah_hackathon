@@ -69,6 +69,9 @@ class DatasetWrapper:
         """Read the frame with the specified ID from disk and return it as a numpy matrix."""
         return cv.imread(self.__metadata[frameId]["filepath"])
 
+    def getFileName(self, frameId):
+        return self.__metadata[frameId]['filepath']
+
     def getRois(self, frameId):
         """Return the regions of interest from the metadata for the specified frame."""
         return copy.deepcopy(self.__metadata[frameId]["rois"])
