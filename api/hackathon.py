@@ -70,7 +70,7 @@ class DatasetWrapper:
         return cv.imread(self.__metadata[frameId]["filepath"])
 
     def getFileName(self, frameId):
-        return self.__metadata[frameId]['filepath']
+        return self.__metadata[frameId]["filepath"]
 
     def getRois(self, frameId):
         """Return the regions of interest from the metadata for the specified frame."""
