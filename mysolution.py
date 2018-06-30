@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
-
 """This is an example module showing how the API should be used."""
 from api.hackathon import HackathonApi, RunModes
+from LLT import LLT
 import os
 import time
 import hashlib
@@ -36,22 +35,14 @@ class MySolution(HackathonApi):
         We will just stupidly return random ROIs here
         to show what the result has to look like.
         """
-        resultSet = [[
-            np.array([[0, 0], [0.5, 0], [0.5, 0.5], [0, 0.5]]),
-            np.array([[0.5, 0], [1, 0], [1, 0.5], [0.5, 0.5]]),
-            np.array([[0, 0.5], [0.5, 0.5], [0.5, 1], [0, 1]]),
-            np.array([[0.5, 0.5], [1, 0.5], [1, 1], [0.5, 1]])
-        ], [
-            np.array([[0.5, 0.3], [0.8, 0.3], [0.8, 0.35], [0.5, 0.35]])
-        ], [
-            np.array([[0.2, 0.3], [0.5, 0.3], [0.5, 0.35], [0.2, 0.35]])
-        ], [
-            np.array([[0.3, 0.6], [0.5, 0.6], [0.5, 0.65], [0.3, 0.65]]),
-            np.array([[0.1, 0.2], [0.3, 0.25], [0.3, 0.3], [0.1, 0.27]]),
-        ], [
-            np.array([[0.8, 0.5], [0.9, 0.5], [0.9, 0.52], [0.8, 0.52]])
-        ]]
-        return resultSet[int((time.time() / 10.0) % len(resultSet))]
+        LowLevelTrigger = LLT()
+        possiblePlates = LowLevelTrigger.detectPossiblePlates(frame)
+        wh = np.array(frame.shape)[1::-1]
+
+        plates = [plate/wh for plate in possiblePlates if plate is not None]
+        if len(plates) == 0:
+            plates = [np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])]
+        return plates # relative positions of rectangles
 
     def handleFrameForTaskB(self, frame, regionCoordinates):
         """
@@ -90,7 +81,7 @@ if __name__ == "__main__":
     # getFrame(frameId) method for example. Have a look at the class' documentation
     # inside the ./api/hackathon.py file!
     solution.run(RunModes.TASK_A_FULL)
-    solution.run(RunModes.TASK_B_FULL)
+    # solution.run(RunModes.TASK_B_FULL)
     # solution.run(RunModes.INTEGRATED_FULL)
     # The visualization run mode only shows the algorithm performing live on
     # a video. The only thing it really tests is whether your algorithm can
