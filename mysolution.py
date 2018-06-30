@@ -67,6 +67,17 @@ class MySolution(HackathonApi):
         else:
             return None
 
+    def scaleupRects(self, rects):
+        result = []
+        sf = 1.1
+        for rect in rects:
+            m = np.mean(rect, axis=0, keepdims=True)
+            for i in range(4):
+                rect[i, :] = m + (rect[i, :] - m)*sf
+            if np.max(rect) <= 1. and np.min(rect) >= 0.:
+                result.append(rect)
+        return result
+
     def handleFrameForTaskA(self, frame):
         """
         See the documentation in the parent class for a whole lot of information on this method.
@@ -83,9 +94,11 @@ class MySolution(HackathonApi):
         possiblePlates = [plate for plate in possiblePlates if len(np.unique(plate, axis=0)) == 4]
         possiblePlates = [self.make_rect_convex(plate) for plate in possiblePlates]
         plates = [plate for plate in possiblePlates if plate is not None]
+        plates = self.scaleupRects(plates)
+        plates = deselect_rects(plates, frame)
         if len(plates) == 0:
             plates = [np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])]
-        return plates # deselect_rects(plates)
+        return plates
 
     def wordImage2ListOfLetterImages(self, image):
         # convert to gray scale
@@ -271,7 +284,7 @@ if __name__ == "__main__":
     # of the datasetWrapper directly. You can get frames with its
     # getFrame(frameId) method for example. Have a look at the class' documentation
     # inside the ./api/hackathon.py file!
-    # solution.run(RunModes.TASK_A_SINGLE)
+    solution.run(RunModes.TASK_A_FULL)
     # solution.run(RunModes.TASK_B_FULL)
     # solution.run(RunModes.INTEGRATED_FULL)
     # The visualization run mode only shows the algorithm performing live on
