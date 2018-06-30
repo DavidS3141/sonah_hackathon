@@ -5,6 +5,7 @@ import imutils
 from Utils import *
 import itertools
 
+TEST_RUN = True
 
 def pp_hsv_mask(frame, s=100, v_lower=50):
     hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
@@ -36,13 +37,19 @@ def image_to_contours(image, thresh_size=11):
     contours = contours_inner + contours_tree
     return gray, contours, edges
 
-def find_rectangles(image):
+def find_rectangles(image, realtime=False):
     wh = np.array(image.shape)[1::-1]
     # Resize the image - change width to 500
     width=500
     image = imutils.resize(image, width=width)
+
+    # iterate over combinations of thresh and epsilon to find optimal shapes
     thresh_size_list = [3, 5, 7, 9, 11, 13, 15, 17, 19, 21]
     epsilon_list = [0.005, 0.007, 0.01, 0.015, 0.02, 0.025, 0.05]
+    if realtime:
+        thresh_size_list = [9, 11, 13, 15,]
+        epsilon_list = [0.007, 0.01, 0.015]
+
     squares= []
     all_contours = []
     for thresh_size, epsilon in itertools.product(thresh_size_list, epsilon_list):
@@ -56,13 +63,16 @@ def find_rectangles(image):
                 #contours must have at least certain size (250 px)
                 if cv.contourArea(approx) > 250:
                     squares.append(np.squeeze(np.array(approx)))
-        print("thresh_size: %i, epsilon_size: %.3f, num_squares = %i" % (thresh_size, epsilon, len(squares)))
+        if TEST_RUN:
+            print("thresh_size: %i, epsilon_size: %.3f, num_squares = %i" % (thresh_size, epsilon, len(squares)))
 
     # Drawing the selected contour on the original image
-    cv.drawContours(image, all_contours, -1, (0,0,255), 3)
-    cv.drawContours(image, squares, -1, (0,255,0), 3)
-    concat_image = np.concatenate((image, cv.cvtColor(gray,cv.COLOR_GRAY2RGB), cv.cvtColor(edges,cv.COLOR_GRAY2RGB)), axis=1)
+    if TEST_RUN:
+        cv.drawContours(image, all_contours, -1, (0,0,255), 3)
+        cv.drawContours(image, squares, -1, (0,255,0), 3)
+        concat_image = np.concatenate((image, cv.cvtColor(gray,cv.COLOR_GRAY2RGB), cv.cvtColor(edges,cv.COLOR_GRAY2RGB)), axis=1)
 
-    cv.imwrite('output_poly/%i.png' % np.random.randint(0,10000), concat_image)
+        cv.imwrite('output_poly/%i.png' % np.random.randint(0,10000), concat_image)
 
+    # when going back to main code, rescale back from 500 px width
     return rescale_squares(squares, wh, width)

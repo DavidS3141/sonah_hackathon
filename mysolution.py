@@ -46,6 +46,10 @@ class MySolution(HackathonApi):
     ylen = 4*110
     minSmall = 2000
 
+    def run(self, runMode, **kwargs):
+        self.runMode = runMode
+        super(MySolution, self).run(runMode, **kwargs)
+
     def isRectConvex(self, rect):
         return cv.isContourConvex(np.multiply(rect, 10000).astype(int))
 
@@ -71,7 +75,8 @@ class MySolution(HackathonApi):
         to show what the result has to look like.
         """
         LowLevelTrigger = LLT()
-        possiblePlates = LowLevelTrigger.detectPossiblePlates(frame)
+        realtime = (self.runMode == RunModes.VISUALIZATION)
+        possiblePlates = LowLevelTrigger.detectPossiblePlates(frame, realtime)
         wh = np.array(frame.shape)[1::-1]
 
         possiblePlates = [plate/wh for plate in possiblePlates]
@@ -266,10 +271,10 @@ if __name__ == "__main__":
     # of the datasetWrapper directly. You can get frames with its
     # getFrame(frameId) method for example. Have a look at the class' documentation
     # inside the ./api/hackathon.py file!
-    solution.run(RunModes.TASK_A_SINGLE)
+    # solution.run(RunModes.TASK_A_SINGLE)
     # solution.run(RunModes.TASK_B_FULL)
     # solution.run(RunModes.INTEGRATED_FULL)
     # The visualization run mode only shows the algorithm performing live on
     # a video. The only thing it really tests is whether your algorithm can
     # run in real-time. Its primary purpose is to provide a visualization however.
-    # solution.run(RunModes.VISUALIZATION, videoFilePath=os.path.abspath("./data/demovideo.avi"))
+    solution.run(RunModes.VISUALIZATION, videoFilePath=os.path.abspath("./data/demovideo.avi"))

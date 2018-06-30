@@ -1,5 +1,6 @@
 """
 The Low Level Trigger (LLT) should detect all possible plates in scene
+The lower part of the document compromises the High Level Trigger (HLT) which is used to reduce the numbers of plates detected by the HLT
 """
 
 import cv2 as cv
@@ -12,12 +13,12 @@ class LLT:
     def __init__(self):
         self.thresh = {}
 
-    def detectPossiblePlates(self, frame):
+    def detectPossiblePlates(self, frame, realtime=False):
         height, width, channels = frame.shape
 
         # hsv_mask = pp_hsv_mask(frame)
         # masked_frame = cv.bitwise_and(frame, frame, mask=hsv_mask)
-        rectangles = find_rectangles(frame)
+        rectangles = find_rectangles(frame, realtime)
         # rectangles = [konvex_rectangle(rectangle) for rectangle in rectangles]
         return rectangles
 
