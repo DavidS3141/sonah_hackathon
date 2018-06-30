@@ -2,7 +2,7 @@
 
 """This is an example module showing how the API should be used."""
 from api.hackathon import HackathonApi, RunModes
-from LLT import LLT
+from LLT import LLT, deselect_rects
 import os
 import time
 import hashlib
@@ -80,7 +80,7 @@ class MySolution(HackathonApi):
         plates = [plate for plate in possiblePlates if plate is not None]
         if len(plates) == 0:
             plates = [np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])]
-        return plates # relative positions of rectangles
+        return deselect_rects(plates)
 
     def wordImage2ListOfLetterImages(self, image):
         # convert to gray scale
