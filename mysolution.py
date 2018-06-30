@@ -273,8 +273,8 @@ if __name__ == "__main__":
     # inside the ./api/hackathon.py file!
     # solution.run(RunModes.TASK_A_SINGLE)
     # solution.run(RunModes.TASK_B_FULL)
-    # solution.run(RunModes.INTEGRATED_FULL)
+    solution.run(RunModes.INTEGRATED_FULL)
     # The visualization run mode only shows the algorithm performing live on
     # a video. The only thing it really tests is whether your algorithm can
     # run in real-time. Its primary purpose is to provide a visualization however.
-    solution.run(RunModes.VISUALIZATION, videoFilePath=os.path.abspath("./data/demovideo.avi"))
+    # solution.run(RunModes.VISUALIZATION, videoFilePath=os.path.abspath("./data/demovideo.avi"))
