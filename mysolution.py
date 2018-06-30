@@ -80,7 +80,7 @@ class MySolution(HackathonApi):
         plates = [plate for plate in possiblePlates if plate is not None]
         if len(plates) == 0:
             plates = [np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])]
-        return deselect_rects(plates)
+        return plates # deselect_rects(plates)
 
     def wordImage2ListOfLetterImages(self, image):
         # convert to gray scale
@@ -266,8 +266,8 @@ if __name__ == "__main__":
     # of the datasetWrapper directly. You can get frames with its
     # getFrame(frameId) method for example. Have a look at the class' documentation
     # inside the ./api/hackathon.py file!
-    # solution.run(RunModes.TASK_A_FULL)
-    solution.run(RunModes.TASK_B_FULL)
+    solution.run(RunModes.TASK_A_SINGLE)
+    # solution.run(RunModes.TASK_B_FULL)
     # solution.run(RunModes.INTEGRATED_FULL)
     # The visualization run mode only shows the algorithm performing live on
     # a video. The only thing it really tests is whether your algorithm can

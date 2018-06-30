@@ -292,7 +292,7 @@ class HackathonApi:
         """
         if "frameId" not in kwargs or (not isinstance(kwargs["frameId"], int)) or kwargs["frameId"] < 0 or kwargs["frameId"] >= self.__datasetWrapper.getTotalFrameCount():
             print("INFO: No or invalid frameId, selecting random frame!")
-            frameId = random.randint(0, self.__datasetWrapper.getTotalFrameCount()-1)
+            frameId = 2 #random.randint(0, self.__datasetWrapper.getTotalFrameCount()-1)
         else:
             frameId = kwargs["frameId"]
         resultMetrics = {}

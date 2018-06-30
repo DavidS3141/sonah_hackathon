@@ -26,44 +26,15 @@ def image_to_contours(image, thresh_size=11):
     # gray = cv.blur(gray, (5,5))
     # gray = cv.bilateralFilter(gray,11,17,17)
 
-    # cv.imshow("1 - Grayscale Conversion", gray)
-
     edges = cv.adaptiveThreshold(gray,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY,thresh_size,2)
-    # cv.imshow("edges pre", edges)
     edges = (hsv_mask > 0) * edges
-    # cv.imshow("edges post", edges)
-    #cv.waitKey(0)
-    # Find contours based on Edges
-    contour_img, contours_inner, _ = cv.findContours(edges.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
-    contour_img, contours_outer, _ = cv.findContours(edges.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
+
+    # Implement three different Contour finders
+    contour_img, contours_inner, _ = cv.findContours(edges.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    contour_img, contours_tree, _ = cv.findContours(edges.copy(), cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
     # cv.waitKey(0)
-    contours = contours_inner + contours_outer
+    contours = contours_inner + contours_tree
     return gray, contours, edges
-
-def enhance(img):
-    kernel = np.array([[-1,0,1],[-2,0,2],[1,0,1]])
-    return cv.filter2D(img, -1, kernel)
-
-def image_to_contours_2(image):
-    se_shape = (16,4)
-
-    if options.get('type') == 'rect':
-        se_shape = (17,4)
-
-    elif options.get('type') == 'square':
-        se_shape = (7,6)
-
-    input_image = np.copy(image)
-
-    gray = cv.cvtColor(input_image, cv.COLOR_BGR2GRAY)
-    gray = enhance(gray)
-    gray = cv.GaussianBlur(gray, (5,5), 0)
-    gray = cv.Sobel(gray, -1, 1, 0)
-    h,sobel = cv.threshold(gray,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
-    se = cv.getStructuringElement(cv.MORPH_RECT, se_shape)
-    gray = cv.morphologyEx(sobel, cv.MORPH_CLOSE, se)
-    ed_img = np.copy(gray)
-    return findContours(gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[1]
 
 def find_rectangles(image):
     wh = np.array(image.shape)[1::-1]
