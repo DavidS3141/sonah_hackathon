@@ -91,6 +91,11 @@ class MySolution(HackathonApi):
         # gray = cv.threshold(gray, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)[1]
         # gray = cv.threshold(gray, 0, 255, cv.THRESH_BINARY)[1]
         gray = cv.threshold(gray, 0, 255, cv.THRESH_OTSU)[1]
+        # gray = cv.adaptiveThreshold(gray,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,\
+        #     cv.THRESH_BINARY,11*64+1,2)
+        # cv.imshow('bin', gray)
+        # cv.waitKey(0)
+        # cv.destroyAllWindows()
 
         # make a check to see if median blurring should be done to remove
         # noise
@@ -152,9 +157,13 @@ class MySolution(HackathonApi):
         # gray = cv.medianBlur(gray, 3)
         # compute text
         if type == 'letter':
-            text = pytesseract.image_to_string(Image.fromarray(gray), config='-psm 10')
-        else:
-            text = pytesseract.image_to_string(Image.fromarray(gray), config='-psm 10 tessedit_char_whitelist=0123456789')
+            text = pytesseract.image_to_string(Image.fromarray(gray), config='--tessdata-dir ../tessdata --oem 0 --psm 10 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+        elif type == 'digit':
+            text = pytesseract.image_to_string(Image.fromarray(gray), config='--tessdata-dir ../tessdata --oem 0 --psm 10 -c tessedit_char_whitelist=0123456789')
+        elif type == 'posDigit':
+            text = pytesseract.image_to_string(Image.fromarray(gray), config='--tessdata-dir ../tessdata --oem 0 --psm 10 -c tessedit_char_whitelist=123456789')
+        elif type == 'digitE':
+            text = pytesseract.image_to_string(Image.fromarray(gray), config='--tessdata-dir ../tessdata --oem 0 --psm 10 -c tessedit_char_whitelist=0123456789E')
 
         # show image
         # cv.imshow(text, gray)
@@ -199,6 +208,11 @@ class MySolution(HackathonApi):
             for i, letter in enumerate(letters):
                 #print(len(letter))
                 type = "digit" if k == 2 else "letter"
+                if k == 2:
+                    if i + 1 == len(letters):
+                        type = "digitE"
+                    elif i == 0:
+                        type = "posDigit"
                 result += self.letterImageToChar(letter, type)
 
                 # cv.imshow(self.letterImageToChar(letter)+str(i), letter)
@@ -215,7 +229,8 @@ class MySolution(HackathonApi):
             resultParts[0] += resultParts[1][0]
             resultParts[1] = resultParts[1][1:]
         result = '-'.join(resultParts)
-        if re.match("^[a-zA-ZüÖöÜäÄ]{1,3}-[a-zA-ZöÖüÜäÄ]{1,2}-[1-9][0-9]{0,3}$", result):
+        print(result)
+        if re.match("^[a-zA-ZüÖöÜäÄ]{1,3}-[a-zA-ZöÖüÜäÄ]{1,2}-[1-9][0-9]{0,3}[eE]?$", result):
             print("Found possible numberplate")
             return result
         else:
@@ -251,8 +266,8 @@ if __name__ == "__main__":
     # of the datasetWrapper directly. You can get frames with its
     # getFrame(frameId) method for example. Have a look at the class' documentation
     # inside the ./api/hackathon.py file!
-    solution.run(RunModes.TASK_A_FULL)
-    # solution.run(RunModes.TASK_B_FULL)
+    # solution.run(RunModes.TASK_A_FULL)
+    solution.run(RunModes.TASK_B_FULL)
     # solution.run(RunModes.INTEGRATED_FULL)
     # The visualization run mode only shows the algorithm performing live on
     # a video. The only thing it really tests is whether your algorithm can
