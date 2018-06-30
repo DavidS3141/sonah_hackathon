@@ -266,7 +266,7 @@ class HackathonApi:
         if not isinstance(output, str):
             print("ERROR: Output is not a string.")
             return None
-        if not re.match("^[a-zA-ZüÖöÜäÄ]{1,3}-[a-zA-ZöÖüÜäÄ]{1,2}-[1-9][0-9]{0,3}$", output):
+        if not re.match("^[a-zA-ZüÖöÜäÄ]{1,3}-[a-zA-ZöÖüÜäÄ]{1,2}-[1-9][0-9]{0,3}[eE]?$", output):
             print("ERROR: Output does not match regular expression of a number plate.")
             return None
         if output.upper() != correctLabel.upper():
