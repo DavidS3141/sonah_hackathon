@@ -34,13 +34,31 @@ def bbox(img):
 
 def deselect_rects(rects, image):
     selected = [rect for rect in rects if isPromisingRect(rect, image)]
-    return selected
+    # removing duplicates, overlaps
+    region_selected = np.zeros(image.shape[:2])
+    rect_areas = [cv.contourArea((rect * image.shape[1::-1]).astype(int)) for rect in selected]
+    idx_sorted = np.argsort(rect_areas)[::-1]
+    unique_selected = []
+    for idx in idx_sorted:
+        rect = selected[idx]
+        xmin = int(np.min(rect[:, 0]) * image.shape[0])
+        xmax = int(np.max(rect[:, 0]) * image.shape[0])
+        ymin = int(np.min(rect[:, 1]) * image.shape[1])
+        ymax = int(np.max(rect[:, 1]) * image.shape[1])
+        cut_region_selected = region_selected[xmin:xmax+1, ymin:ymax+1]
+        if np.sum(cut_region_selected) == 0:
+            unique_selected.append(rect)
+            region_selected[xmin:xmax+1, ymin:ymax+1] = 1
+    return unique_selected
 
 
 def isPromisingRect(rect, image):
     parallel_sides = has_parallel_sides(rect)
     good_ratio = has_good_side_ratios(rect)
-    looks_like_text = looks_like_text(rect, image)
+    if parallel_sides and good_ratio:
+        looks_like_text = rect_looks_like_text(rect, image)
+    else:
+        looks_like_text = False
     return parallel_sides and good_ratio and looks_like_text
 
 
@@ -73,13 +91,16 @@ def has_good_side_ratios(rect):
     d2 = m1 - m3
     d1 = np.sqrt(np.sum(d1**2))
     d2 = np.sqrt(np.sum(d2**2))
+    d = np.sqrt(d1**2 + d2**2)
     ratio = d1/d2
     if ratio < 1.:
         ratio = 1./ratio
-    return (ratio > 3) and (ratio < 10)
+    return (ratio > 1.5) and (ratio < 10) and (d > 0.1) and (d < 0.8)
 
 
-def is_looks_like_text(rect, image):
+def rect_looks_like_text(rect, image):
+    global_grayscale = np.mean(cv.cvtColor(image, cv.COLOR_BGR2GRAY))/255.
+    global_graystd = np.std(cv.cvtColor(image, cv.COLOR_BGR2GRAY))/255
     image = image.copy()
     small = np.min(image.shape[:-1])
     su = 2000//small + 1
@@ -107,6 +128,7 @@ def is_looks_like_text(rect, image):
 
     # convert to gray scale
     gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    local_grayscale = np.mean(gray)/255.
 
     # check to see if we should apply thresholding to preprocess the
     # image
@@ -131,10 +153,15 @@ def is_looks_like_text(rect, image):
         r1, r2, c1, c2 = bbox(labels == i)
         dr = r2 - r1
         dc = c2 - c1
-        if dr > ylen / 3 and dc > xlen / 40:
+        if dr > ylen / 3 and dr < ylen * 0.99 and dc > xlen / 40 and dc < xlen * 0.9:
             # possibly one or more chars
             n_chars = int(round(dc/dr))
             ci = np.round(np.linspace(c1, c2, n_chars+1)).astype(int)
             for k in range(n_chars):
                 listOfBB.append((r1-delta, r2+delta+1, ci[k]-delta, ci[k+1]+delta+1))
-    return len(listOfBB) >= 2
+
+    # cv.imshow('bin%d' % (len(listOfBB) >= 2), gray)
+    # cv.waitKey(0)
+    # cv.destroyAllWindows()
+
+    return len(listOfBB) >= 2 and local_grayscale < global_grayscale + global_graystd

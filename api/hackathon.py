@@ -335,7 +335,7 @@ class HackathonApi:
             # Visualize output
             fname = self.__datasetWrapper.getFileName(i)
             filename, ext = os.path.splitext(fname)
-            fname = filename + '_output' + ext
+            fname = filename + '_outputA' + ext
 
             imageShape = image.shape
             for i in range(len(regions)):
