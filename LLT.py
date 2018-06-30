@@ -17,3 +17,4 @@ class LLT:
         hsv_mask = pp_hsv_mask(frame)
         masked_frame = cv.bitwise_and(frame, frame, mask=hsv_mask)
         rectangles = find_rectangles(masked_frame)
+        return rectangles
