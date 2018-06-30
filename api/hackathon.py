@@ -338,14 +338,14 @@ class HackathonApi:
             fname = filename + '_output' + ext
 
             imageShape = image.shape
-            for i in range(len(output)):
-                scaledCoordinates = np.multiply(output[i], np.array([imageShape[1], imageShape[0]])).astype(int)
-                cv.drawContours(image, [scaledCoordinates], -1, (0, 0, 255), 5, cv.LINE_8)
             for i in range(len(regions)):
                 scaledCoordinates = np.multiply(regions[i]["coordinates"], np.array([imageShape[1], imageShape[0]])).astype(int)
                 cv.drawContours(image, [scaledCoordinates], -1, (0, 255, 0), 5, cv.LINE_8)
                 textSize = cv.getTextSize(regions[i]["label"], cv.FONT_HERSHEY_SIMPLEX, 1, 3)[0]
                 cv.putText(image, regions[i]["label"], (scaledCoordinates[0][0] + 10, scaledCoordinates[0][1] + 10 + textSize[1]), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 3, cv.LINE_8, False)
+            for i in range(len(output)):
+                scaledCoordinates = np.multiply(output[i], np.array([imageShape[1], imageShape[0]])).astype(int)
+                cv.drawContours(image, [scaledCoordinates], -1, (0, 0, 255), 5, cv.LINE_8)
             cv.imwrite(fname, image)
             # log
             allAverageAreaOverlaps.append(np.mean(result[:, 2]))

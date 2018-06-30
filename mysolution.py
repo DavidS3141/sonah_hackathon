@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """This is an example module showing how the API should be used."""
 from api.hackathon import HackathonApi, RunModes
 from LLT import LLT
@@ -42,6 +44,23 @@ class MySolution(HackathonApi):
     xlen = 4*520
     ylen = 4*110
     minSmall = 2000
+
+    def isRectConvex(self, rect):
+        return cv.isContourConvex(np.multiply(rect, 10000).astype(int))
+
+    def make_rect_convex(self, rect):
+        xpy = rect[:, 0] + rect[:, 1]
+        startIdx = np.argsort(xpy)[0]
+        other3 = rect[np.argsort(xpy)[1:], :]
+        start = rect[startIdx, :].reshape(1, 2)
+        relOther3 = other3 - start
+        phi = np.arctan2(relOther3[:, 1], relOther3[:, 0])
+        other3sort = other3[np.argsort(phi), :]
+        convex_rect = np.concatenate([start, other3sort], axis=0)
+        if self.isRectConvex(convex_rect):
+            return convex_rect
+        else:
+            return np.array([[0, 0], [1, 0], [1, 1], [0, 1]])
 
     def handleFrameForTaskA(self, frame):
         """
@@ -129,7 +148,7 @@ class MySolution(HackathonApi):
         cv.imshow(text, gray)
         cv.waitKey(0)
         cv.destroyAllWindows()
-
+        print(text)
         return text
 
     def handleFrameForTaskB(self, frame, regionCoordinates):
@@ -143,6 +162,12 @@ class MySolution(HackathonApi):
         su = self.minSmall//small + 1
         h, w = frame.shape[:-1]
         frame = cv.resize(frame, (su * w, su * h), interpolation=cv.INTER_CUBIC)
+
+        # # Noise removal with iterative bilateral filter(removes noise while preserving edges)
+        # bilateralFilterScale = frame.shape[1] / 500
+        # frame = cv.bilateralFilter(frame, int(11*bilateralFilterScale), 17, 17)
+        # # cv.imshow("2 - Bilateral Filter", frame)
+
         targetSize = np.float32([[0, 0], [self.xlen, 0], [self.xlen, self.ylen], [0, self.ylen]])
         scaledCoordinates = np.multiply(regionCoordinates, np.array([frame.shape[1], frame.shape[0]])).astype(int)
         scaledCoordinates = np.float32(scaledCoordinates)
@@ -160,7 +185,8 @@ class MySolution(HackathonApi):
         for k, letters in enumerate(letterGroups):
             for i, letter in enumerate(letters):
                 result += 'X' if k!=2 else '1'
-                self.letterImageToChar(letter)+str(i))
+                self.letterImageToChar(letter)
+                # cv.imshow(self.letterImageToChar(letter)+str(i), letter)
             result += '-'
             # cv.waitKey(0)
             # cv.destroyAllWindows()
@@ -208,7 +234,7 @@ if __name__ == "__main__":
     # inside the ./api/hackathon.py file!
     # solution.run(RunModes.TASK_A_FULL)
     solution.run(RunModes.TASK_B_FULL)
-    # solution.run(RunModes.INTEGRATED_FULL)
+    solution.run(RunModes.INTEGRATED_FULL)
     # The visualization run mode only shows the algorithm performing live on
     # a video. The only thing it really tests is whether your algorithm can
     # run in real-time. Its primary purpose is to provide a visualization however.
