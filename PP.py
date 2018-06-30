@@ -29,16 +29,11 @@ def find_rectangles(image):
     gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
     cv.imshow("1 - Grayscale Conversion", gray)
 
-    # Noise removal with iterative bilateral filter(removes noise while preserving edges)
-    gray = cv.bilateralFilter(gray, 11, 17, 17)
-    cv.imshow("2 - Bilateral Filter", gray)
+    th3 = cv.adaptiveThreshold(gray,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY,11,2)
 
-    # Find Edges of the grayscale image
-    edged = cv.Canny(gray, 170, 200)
-    cv.imshow("4 - Canny Edges", edged)
     #cv.waitKey(0)
     # Find contours based on Edges
-    (new, cnts, _) = cv.findContours(edged.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
+    (new, cnts, _) = cv.findContours(th3.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
     cnts=sorted(cnts, key = cv.contourArea, reverse = True)[:30] #sort contours based on their area keeping minimum required area as '30' (anything smaller than this will not be considered)
     NumberPlateCnt = None #we currently have no Number plate contour
 
@@ -56,6 +51,8 @@ def find_rectangles(image):
     print(squares)
     # Drawing the selected contour on the original image
     cv.drawContours(image, squares, -1, (0,255,0), 3)
-    cv.imwrite('output_poly/%i.png' % np.random.randint(0,10000), image)
+    concat_image = np.concatenate((image[:,:,0], gray, th3), axis=1)
+
+    cv.imwrite('output_poly/%i.png' % np.random.randint(0,10000), concat_image)
 
     return rescale_squares(squares, wh, width)
