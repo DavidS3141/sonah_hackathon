@@ -157,13 +157,13 @@ class MySolution(HackathonApi):
         # gray = cv.medianBlur(gray, 3)
         # compute text
         if type == 'letter':
-            text = pytesseract.image_to_string(Image.fromarray(gray), config='--tessdata-dir ../tessdata --oem 0 --psm 10 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+            text = pytesseract.image_to_string(Image.fromarray(gray), config='--tessdata-dir ../tessdata --psm 10 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ')
         elif type == 'digit':
-            text = pytesseract.image_to_string(Image.fromarray(gray), config='--tessdata-dir ../tessdata --oem 0 --psm 10 -c tessedit_char_whitelist=0123456789')
+            text = pytesseract.image_to_string(Image.fromarray(gray), config='--tessdata-dir ../tessdata --psm 10 -c tessedit_char_whitelist=0123456789')
         elif type == 'posDigit':
-            text = pytesseract.image_to_string(Image.fromarray(gray), config='--tessdata-dir ../tessdata --oem 0 --psm 10 -c tessedit_char_whitelist=123456789')
+            text = pytesseract.image_to_string(Image.fromarray(gray), config='--tessdata-dir ../tessdata --psm 10 -c tessedit_char_whitelist=123456789')
         elif type == 'digitE':
-            text = pytesseract.image_to_string(Image.fromarray(gray), config='--tessdata-dir ../tessdata --oem 0 --psm 10 -c tessedit_char_whitelist=0123456789E')
+            text = pytesseract.image_to_string(Image.fromarray(gray), config='--tessdata-dir ../tessdata --psm 10 -c tessedit_char_whitelist=0123456789E')
 
         # show image
         # cv.imshow(text, gray)
