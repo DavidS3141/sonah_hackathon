@@ -5,7 +5,7 @@ import imutils
 from Utils import *
 import itertools
 
-TEST_RUN = True
+TEST_RUN = False
 
 def pp_hsv_mask(frame, s=100, v_lower=50):
     hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
