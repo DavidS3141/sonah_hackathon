@@ -61,7 +61,7 @@ class MySolution(HackathonApi):
         if self.isRectConvex(convex_rect):
             return convex_rect
         else:
-            return np.array([[0, 0], [1, 0], [1, 1], [0, 1]])
+            return None
 
     def handleFrameForTaskA(self, frame):
         """
@@ -74,7 +74,10 @@ class MySolution(HackathonApi):
         possiblePlates = LowLevelTrigger.detectPossiblePlates(frame)
         wh = np.array(frame.shape)[1::-1]
 
-        plates = [plate/wh for plate in possiblePlates if plate is not None]
+        possiblePlates = [plate/wh for plate in possiblePlates]
+        possiblePlates = [plate for plate in possiblePlates if len(np.unique(plate, axis=0)) == 4]
+        possiblePlates = [self.make_rect_convex(plate) for plate in possiblePlates]
+        plates = [plate for plate in possiblePlates if plate is not None]
         if len(plates) == 0:
             plates = [np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])]
         return plates # relative positions of rectangles

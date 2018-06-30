@@ -18,5 +18,5 @@ class LLT:
         # hsv_mask = pp_hsv_mask(frame)
         # masked_frame = cv.bitwise_and(frame, frame, mask=hsv_mask)
         rectangles = find_rectangles(frame)
-        rectangles = [konvex_rectangle(rectangle) for rectangle in rectangles]
+        # rectangles = [konvex_rectangle(rectangle) for rectangle in rectangles]
         return rectangles
