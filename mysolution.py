@@ -12,6 +12,7 @@ import numpy as np
 import cv2 as cv
 from PIL import Image
 import pytesseract
+import re
 
 
 def bbox(img):
@@ -122,12 +123,18 @@ class MySolution(HackathonApi):
             groupOfLetters = []
             for k in range(group.shape[0]):
                 r1, r2, c1, c2 = tuple(group[k, :])
+                if not (r1>0 and r2>0 and c1>0 and c2>0):
+                    return []
+                if not (r1<=image.shape[0] and r2<=image.shape[0]):
+                    return []
+                if not (c1<=image.shape[1] and c2<=image.shape[1]):
+                    return []
                 groupOfLetters.append(image[r1:r2, c1:c2, :])
             listOfLetters.append(groupOfLetters)
 
         return listOfLetters
 
-    def letterImageToChar(self, letter_image):
+    def letterImageToChar(self, letter_image, type):
         # convert to gray scale
         gray = cv.cvtColor(letter_image, cv.COLOR_BGR2GRAY)
 
@@ -140,15 +147,17 @@ class MySolution(HackathonApi):
         # make a check to see if median blurring should be done to remove
         # noise
         # gray = cv.medianBlur(gray, 3)
-
         # compute text
-        text = pytesseract.image_to_string(Image.fromarray(gray), config='-psm 10')
+        if type == 'letter':
+            text = pytesseract.image_to_string(Image.fromarray(gray), config='-psm 10')
+        else:
+            text = pytesseract.image_to_string(Image.fromarray(gray), config='-psm 10 tessedit_char_whitelist=0123456789')
 
         # show image
-        cv.imshow(text, gray)
-        cv.waitKey(0)
-        cv.destroyAllWindows()
-        print(text)
+        # cv.imshow(text, gray)
+        # cv.waitKey(0)
+        # cv.destroyAllWindows()
+        # print(text)
         return text
 
     def handleFrameForTaskB(self, frame, regionCoordinates):
@@ -180,18 +189,21 @@ class MySolution(HackathonApi):
 
         letterGroups = self.wordImage2ListOfLetterImages(target)
         if len(letterGroups) != 3:
+            print("LetterGroups != 3")
             return None
         result = ''
         for k, letters in enumerate(letterGroups):
             for i, letter in enumerate(letters):
-                result += 'X' if k!=2 else '1'
-                self.letterImageToChar(letter)
+                #print(len(letter))
+                type = "digit" if k == 2 else "letter"
+                result += self.letterImageToChar(letter, type)
+
                 # cv.imshow(self.letterImageToChar(letter)+str(i), letter)
             result += '-'
             # cv.waitKey(0)
             # cv.destroyAllWindows()
 
-        resultParts = result.split('-')
+        resultParts = result[:-1].split('-')
         if len(resultParts[2]) > 4:
             resultParts[1] += resultParts[2][0]
             resultParts[1] = resultParts[1][:-1] + 'X' # TODO hacky
@@ -200,8 +212,12 @@ class MySolution(HackathonApi):
             resultParts[0] += resultParts[1][0]
             resultParts[1] = resultParts[1][1:]
         result = '-'.join(resultParts)
-        print(result[:-1])
-        return result[:-1]
+        if re.match("^[a-zA-ZüÖöÜäÄ]{1,3}-[a-zA-ZöÖüÜäÄ]{1,2}-[1-9][0-9]{0,3}$", result):
+            print("Found possible numberplate")
+            return result
+        else:
+            print("Did not find numberplate")
+            return None
 
         # rng = random.Random()
         # m = hashlib.md5()
@@ -232,9 +248,9 @@ if __name__ == "__main__":
     # of the datasetWrapper directly. You can get frames with its
     # getFrame(frameId) method for example. Have a look at the class' documentation
     # inside the ./api/hackathon.py file!
-    # solution.run(RunModes.TASK_A_FULL)
-    solution.run(RunModes.TASK_B_FULL)
-    solution.run(RunModes.INTEGRATED_FULL)
+    solution.run(RunModes.TASK_A_FULL)
+    # solution.run(RunModes.TASK_B_FULL)
+    # solution.run(RunModes.INTEGRATED_FULL)
     # The visualization run mode only shows the algorithm performing live on
     # a video. The only thing it really tests is whether your algorithm can
     # run in real-time. Its primary purpose is to provide a visualization however.
