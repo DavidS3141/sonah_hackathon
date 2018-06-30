@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """This is an example module showing how the API should be used."""
 from api.hackathon import HackathonApi, RunModes
 from LLT import LLT
