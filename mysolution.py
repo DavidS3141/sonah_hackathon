@@ -126,9 +126,9 @@ class MySolution(HackathonApi):
         text = pytesseract.image_to_string(Image.fromarray(gray), config='-psm 10')
 
         # show image
-        # cv.imshow(text, gray)
-        # cv.waitKey(0)
-        # cv.destroyAllWindows()
+        cv.imshow(text, gray)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
 
         return text
 
@@ -160,7 +160,7 @@ class MySolution(HackathonApi):
         for k, letters in enumerate(letterGroups):
             for i, letter in enumerate(letters):
                 result += 'X' if k!=2 else '1'
-                # cv.imshow(self.letterImageToChar(letter)+str(i), letter)
+                self.letterImageToChar(letter)+str(i))
             result += '-'
             # cv.waitKey(0)
             # cv.destroyAllWindows()
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     # of the datasetWrapper directly. You can get frames with its
     # getFrame(frameId) method for example. Have a look at the class' documentation
     # inside the ./api/hackathon.py file!
-    solution.run(RunModes.TASK_A_FULL)
+    # solution.run(RunModes.TASK_A_FULL)
     solution.run(RunModes.TASK_B_FULL)
     # solution.run(RunModes.INTEGRATED_FULL)
     # The visualization run mode only shows the algorithm performing live on
